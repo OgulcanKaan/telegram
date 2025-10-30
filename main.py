@@ -20,9 +20,11 @@ from symbols import BIST_LIST
 
 # --- Logging & env ---
 load_dotenv()
+# Render ortamında log seviyesini INFO'dan alalım
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 logging.basicConfig(
     format="%(asctime)s %(levelname)s:%(name)s: %(message)s",
-    level=logging.INFO,
+    level=getattr(logging, LOG_LEVEL.upper()),
 )
 logger = logging.getLogger("bot")
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -49,7 +51,7 @@ def pct_str(price: float, target: float, side: str = "long") -> str:
     except Exception:
         return "%0.00"
 
-# --- Handler Fonksiyonları (DEĞİŞMEDİ) ---
+# --- Handler Fonksiyonları ---
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Selam! Hisse analizi için komut ver.\n\n" + HELP)
 
@@ -223,7 +225,7 @@ async def top10uzun(update: Update, context: ContextTypes.DEFAULT_TYPE):
     presets = [("1d", "180d"), ("1d", "365d")]
     await run_presets(update, presets, "Uzun Vade")
 
-# --- App bootstrap (DEĞİŞTİRİLMİŞ KISIM) ---
+# --- App bootstrap (KRİTİK WEBHOOK KISMI) ---
 def main():
     if not TOKEN:
         raise RuntimeError("TELEGRAM_BOT_TOKEN yok. .env dosyasını doldur.")
@@ -239,15 +241,14 @@ def main():
 
     logger.info("Bot çalışıyor...")
     
-    # 1. Render tarafından atanan portu al
+    # Render ortam değişkenlerini al
     PORT = int(os.environ.get('PORT', '8080'))
     
-    # 2. Kendi Render Web Servisi URL'nizi buraya yazın
-    # Önemli: Eğer URL'niz değişirse bu satırı güncellemelisiniz!
+    # Bu, Render'ın size verdiği public URL'dir. Kesinlikle doğru olmalıdır.
     RENDER_URL = 'https://telegram-7yph.onrender.com' 
 
-    # 3. Polling yerine Webhook dinleyicisini başlat
-    # Bu, Render'ın beklediği web sunucusunu çalıştırır.
+    # Polling yerine Webhook dinleyicisini başlat. 
+    # Bu, Render'ın beklediği portu açar (No open ports detected hatasını çözer).
     app.run_webhook(
         listen="0.0.0.0",
         port=PORT,
