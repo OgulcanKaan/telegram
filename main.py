@@ -8,6 +8,7 @@ from telegram import Update
 from telegram.constants import ParseMode
 from telegram.ext import Application, CommandHandler, ContextTypes
 
+# Diğer modüllerinizin importları (utils, data, analyzers, symbols vb.)
 from utils import normalize_bist
 from data import fetch_ohlcv
 from analyzers.indicators import add_indicators
@@ -244,16 +245,15 @@ def main():
     # Render ortam değişkenlerini al
     PORT = int(os.environ.get('PORT', '8080'))
     
-    # Bu, Render'ın size verdiği public URL'dir. Kesinlikle doğru olmalıdır.
-    RENDER_URL = 'https://telegram-7yph.onrender.com' 
+    # DÜZELTİLEN SATIR: Loglarınızdaki doğru URL kullanıldı.
+    RENDER_URL = 'https://telegram-uy08.onrender.com' 
 
-    # Polling yerine Webhook dinleyicisini başlat. 
-    # Bu, Render'ın beklediği portu açar (No open ports detected hatasını çözer).
+    # Polling yerine Webhook dinleyicisini başlat.
+    # url_path kaldırıldı, Render'ın standart yolunu kullanması bekleniyor.
     app.run_webhook(
         listen="0.0.0.0",
         port=PORT,
-        url_path="webhook", # Telegram'dan gelen isteğin yolu
-        webhook_url=RENDER_URL + "/webhook" # Telegram'a bildirilecek tam URL
+        webhook_url=RENDER_URL # Telegram'a bildirilecek tam URL
     )
 
 if __name__ == "__main__":
