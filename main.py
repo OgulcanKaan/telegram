@@ -27,6 +27,7 @@ logging.basicConfig(
 logger = logging.getLogger("bot")
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
+# --- Sabitler & Yardım Mesajları ---
 HELP = (
     "Komutlar:\n"
     "/analiz TICKER [interval] [period]\n"
@@ -37,17 +38,18 @@ HELP = (
     "/top10uzun  (1d/180d + 1d/365d)"
 )
 
+# --- Yardımcı Fonksiyonlar ---
 def pct_str(price: float, target: float, side: str = "long") -> str:
     """Hedefin yüzde farkını metin olarak döndürür: %+1.23% gibi."""
     try:
         if price <= 0:
             return "%0.00"
         pct = ((target - price) / price) * 100.0
-        # short'ta da hedefler aşağıda olduğundan işaret doğal çıkar; formatı sabit tutuyoruz
         return f"%{pct:+.2f}"
     except Exception:
         return "%0.00"
 
+# --- Handler Fonksiyonları (DEĞİŞMEDİ) ---
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Selam! Hisse analizi için komut ver.\n\n" + HELP)
 
@@ -82,7 +84,6 @@ async def analiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
         p = float(summary["price"])
         h1 = float(summary["t1"]); h2 = float(summary["t2"])
         stop = float(summary["stop"])
-        # bias'a göre işaret doğal; sadece formatı ekliyoruz
         h1pct = pct_str(p, h1)
         h2pct = pct_str(p, h2)
 
@@ -222,10 +223,11 @@ async def top10uzun(update: Update, context: ContextTypes.DEFAULT_TYPE):
     presets = [("1d", "180d"), ("1d", "365d")]
     await run_presets(update, presets, "Uzun Vade")
 
-# --- App bootstrap ---
+# --- App bootstrap (DEĞİŞTİRİLMİŞ KISIM) ---
 def main():
     if not TOKEN:
         raise RuntimeError("TELEGRAM_BOT_TOKEN yok. .env dosyasını doldur.")
+    
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("analiz", analiz))
@@ -235,8 +237,23 @@ def main():
     app.add_handler(CommandHandler("top10orta", top10orta))
     app.add_handler(CommandHandler("top10uzun", top10uzun))
 
-    logger.info("Bot çalışıyor…")
-    app.run_polling(drop_pending_updates=True)
+    logger.info("Bot çalışıyor...")
+    
+    # 1. Render tarafından atanan portu al
+    PORT = int(os.environ.get('PORT', '8080'))
+    
+    # 2. Kendi Render Web Servisi URL'nizi buraya yazın
+    # Önemli: Eğer URL'niz değişirse bu satırı güncellemelisiniz!
+    RENDER_URL = 'https://telegram-7yph.onrender.com' 
+
+    # 3. Polling yerine Webhook dinleyicisini başlat
+    # Bu, Render'ın beklediği web sunucusunu çalıştırır.
+    app.run_webhook(
+        listen="0.0.0.0",
+        port=PORT,
+        url_path="webhook", # Telegram'dan gelen isteğin yolu
+        webhook_url=RENDER_URL + "/webhook" # Telegram'a bildirilecek tam URL
+    )
 
 if __name__ == "__main__":
     main()
